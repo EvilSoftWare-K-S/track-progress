@@ -1,5 +1,7 @@
+import Navbar from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import {ArrowRight} from 'lucide-react'
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bb-white">
@@ -9,12 +11,18 @@ export default function Home() {
             <h1 className="text-black mb-6 text-6xl font-bold">
               The best way to track the progress of something.
             </h1>
-            <p className="text-muted-foreground mb-19 text-xl">
+            <p className="text-muted-foreground mb-10 text-xl">
               Capture, organize, and manage your progress in one place.
             </p>
             <div className="flex flex-col items-center gap-4">
-              <Button size='lg' className='h-12 px-8 text-lg font-medium'>Start for free <ArrowRight className="ml-2"/></Button>
-              <p className="text-sm text-mutted-foreground">Free forever. No credit card required.</p>
+              <Link href={"/sign-up"}>
+                <Button size="lg" className="h-12 px-8 text-lg font-medium">
+                  Start for free <ArrowRight className="ml-2" />
+                </Button>
+              </Link>
+              <p className="text-sm text-mutted-foreground">
+                Free forever. No credit card required.
+              </p>
             </div>
           </div>
         </section>
