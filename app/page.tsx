@@ -1,10 +1,15 @@
-import Navbar from "@/components/navbar";
+import ImageTabs from "@/components/image-tabs/image-tabs";
+import { FIELDVALUES } from "@/components/image-tabs/const";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-export default function Home() {
+import { JSX } from "react/jsx-runtime";
+import { ABOUTSITE } from "@/components/about-block/const";
+import AboutBlock from "@/components/about-block/about-block";
+
+export default function Home(): JSX.Element {
   return (
-    <div className="flex min-h-screen flex-col bb-white">
+    <div className="flex min-h-screen flex-col bg-white">
       <main className=" flex-1">
         <section className=" container mx-auto px-4 py-32">
           <div className="mx-auto max-w-4xl text-center">
@@ -26,6 +31,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <ImageTabs fieldValues={FIELDVALUES} />
+
+        <AboutBlock aboutSite={ABOUTSITE} />
       </main>
     </div>
   );
