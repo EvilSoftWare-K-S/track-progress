@@ -2,11 +2,10 @@ import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/auth/auth";
 import ConnectDB from "@/lib/db";
 import { Board } from "@/lib/models";
-import { generateSlug } from "@/lib/utils";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-export default async function DashBoard() {
+export default async function DashboardPage() {
   const session = await getSession();
 
   if (!session?.user) {
@@ -17,15 +16,15 @@ export default async function DashBoard() {
   const boards = await Board.find({ userId: session.user.id });
 
   return (
-    <>
-      <header className="container mx-auto flex h-16 items-center justify-between px-4">
+    <div className="container mx-auto  px-4">
+      <header className="flex h-16 items-center justify-between ">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <Link href="/dashboard/create">
           <Button>Create New Board</Button>
         </Link>
       </header>
 
-      <section className="container mx-auto px-4 py-8">
+      <section className=" py-8">
         {boards.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
             <div className="text-muted-foreground">
@@ -39,11 +38,10 @@ export default async function DashBoard() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {boards.map((board) => {
-              const slug = generateSlug(board.name);
               return (
                 <Link
                   key={board._id.toString()}
-                  href={`/dashboard/${slug}`}
+                  href={`/dashboard/${board.slug}`}
                   className="group relative rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-md"
                 >
                   <div className="flex items-start justify-between">
@@ -63,6 +61,6 @@ export default async function DashBoard() {
           </div>
         )}
       </section>
-    </>
+    </div>
   );
 }

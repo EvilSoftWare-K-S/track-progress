@@ -7,7 +7,7 @@ import { JSX } from "react/jsx-runtime";
 import { ABOUTSITE } from "@/components/about-block/const";
 import AboutBlock from "@/components/about-block/about-block";
 
-export default function Home(): JSX.Element {
+export default function HomePage(): JSX.Element {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <main className=" flex-1">

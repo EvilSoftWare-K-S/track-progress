@@ -1,5 +1,6 @@
 import ConnectDB from "./db";
 import { Board, Column } from "./models";
+import { generateSlug } from "./utils";
 
 const DEFAULT_COLUMNS = [
   {
@@ -32,6 +33,7 @@ export async function initializeUserBoard(userId: string, boardName: string) {
 
     const board = await Board.create({
       name: boardName,
+      slug: generateSlug(boardName),
       userId,
       columns: [],
     });
