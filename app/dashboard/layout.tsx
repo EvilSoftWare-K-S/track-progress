@@ -8,7 +8,7 @@ export default function DashboardLayout({
   return (
     <main
       className={
-        "min-h-screen container mx-auto flex flex-col px-4 bg-background"
+        "min-h-full bg-background"
       }
     >
       <BreadcrumbClient />

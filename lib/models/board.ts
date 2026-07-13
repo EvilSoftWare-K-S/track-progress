@@ -1,16 +1,13 @@
-import mongoose, { Schema, Document } from "mongoose";
-
-export interface IBoard extends Document {
-  name: string;
-  userId: string;
-  columns: mongoose.Types.ObjectId[];
-  created: Date;
-  updatedAt: Date;
-}
+import mongoose, { Schema } from "mongoose";
+import { IBoard } from "./models.types";
 
 const BoardSchema = new Schema<IBoard>(
   {
     name: {
+      type: String,
+      required: true,
+    },
+    slug: {
       type: String,
       required: true,
     },
@@ -29,4 +26,5 @@ const BoardSchema = new Schema<IBoard>(
   { timestamps: true },
 );
 
-export default mongoose.models.Board || mongoose.model<IBoard>('Board',BoardSchema);
+export default mongoose.models.Board ||
+  mongoose.model<IBoard>("Board", BoardSchema);

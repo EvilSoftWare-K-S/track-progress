@@ -1,23 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-
-export interface IProgressApplication extends Document {
-  title: string;
-  target?: string;
-  location?: string;
-  status: string;
-  columnId: mongoose.Types.ObjectId;
-  boardId: mongoose.Types.ObjectId;
-  userId: string;
-  order: number;
-  notes?: string;
-  rate?: string;
-  url?: string;
-  date?: Date;
-  tags?: string[];
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import mongoose, { Schema } from "mongoose";
+import { IProgressApplication } from "./models.types";
 
 const ProgressApplicationSchema = new Schema<IProgressApplication>(
   {

@@ -22,7 +22,7 @@ export function BreadcrumbClient() {
   }, [] as string[]);
 
   return (
-    <Breadcrumb className={"flex h-8 items-center px-4"}>
+    <Breadcrumb className={"container mx-auto flex h-8 items-center px-4"}>
       <BreadcrumbList>
         {pathSegments.map((segment, index) => {
           const isLast = index === pathSegments.length - 1;
