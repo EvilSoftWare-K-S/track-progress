@@ -19,16 +19,23 @@ export default async function BoardPage({
   }
 
   await ConnectDB();
+
   const board = await Board.findOne({
     userId: session.user.id,
     slug: boardsName,
-  }).populate({ path: "columns" });
+  }).populate({
+    path: "columns",
+    populate: {
+      path: "progressApplication",
+    },
+  });
+
   return (
     <div className="container mx-auto p-6">
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-black">{board.name}</h1>
         <p className="text-gray-600">Track your progress</p>
-        <Link href="/dashboard/create">
+        <Link href={`/dashboard/${boardsName}/create`}>
           <Button>Create New Column</Button>
         </Link>
       </header>
