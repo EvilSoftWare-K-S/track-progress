@@ -19,7 +19,6 @@ export function ProgressApplicationCard({
   progress,
   columns,
 }: IProgressApplicationCardProps) {
-  console.log(progress);
 
   return (
     <>

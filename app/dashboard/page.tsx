@@ -4,16 +4,38 @@ import ConnectDB from "@/lib/db";
 import { Board } from "@/lib/models";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
-export default async function DashboardPage() {
+type TBoardPreview = {
+  _id: string;
+  name: string;
+  slug: string;
+};
+
+async function getBoards(userId: string | undefined): Promise<TBoardPreview[]> {
+  "use cache";
+  await ConnectDB();
+  const boards = await Board.find(
+    { userId },
+    {
+      name: 1,
+      slug: 1,
+    },
+  ).lean();
+
+  return boards.map((board) => ({
+    _id: board._id.toString(),
+    name: board.name,
+    slug: board.slug,
+  }));
+}
+
+async function DashboardPageWrapper() {
   const session = await getSession();
-
   if (!session?.user) {
     redirect("/sign-in");
   }
-
-  await ConnectDB();
-  const boards = await Board.find({ userId: session.user.id });
+  const boards = await getBoards(session?.user.id ?? "");
 
   return (
     <div className="container mx-auto  px-4">
@@ -62,5 +84,13 @@ export default async function DashboardPage() {
         )}
       </section>
     </div>
+  );
+}
+
+export default async function DashboardPage() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <DashboardPageWrapper />
+    </Suspense>
   );
 }
