@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getSession } from "../auth/auth";
 import ConnectDB from "../db";
 import { Board, Column, ProgressApplication } from "../models";
@@ -90,5 +91,6 @@ export async function createProgressApplication(
   await Column.findByIdAndUpdate(columnId, {
     $push: { progressApplication: progressApplication._id },
   });
+  revalidatePath(`/dashboard/${board.slug}`);
   return { data: JSON.parse(JSON.stringify(progressApplication)) };
 }
