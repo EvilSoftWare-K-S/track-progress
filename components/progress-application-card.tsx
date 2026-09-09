@@ -8,18 +8,28 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { PopulatedColumn } from "./kanban-board";
+import { TPopulatedColumn } from "./kanban-board";
+import { updateProgressApplication } from "@/lib/actions/progress-applications";
 
 export interface IProgressApplicationCardProps {
   progress: IProgressApplication;
-  columns: PopulatedColumn[];
+  columns: TPopulatedColumn[];
 }
 
 export function ProgressApplicationCard({
   progress,
   columns,
 }: IProgressApplicationCardProps) {
-
+  async function handleMove(column: TPopulatedColumn) {
+    try {
+      const result = await updateProgressApplication(progress._id, {
+        boardId: column.boardId,
+        columnId: column._id,
+      });
+    } catch (err) {
+      console.error("Failed to move progress application: ", err);
+    }
+  }
   return (
     <>
       <Card className=" cursor-pointer transition-shadow hover:shadow-lg bg-white group shadow-sm">
@@ -86,6 +96,9 @@ export function ProgressApplicationCard({
                           <DropdownMenuItem
                             key={`${column._id}`}
                             className={"focus:bg-gray-200 "}
+                            onClick={() => {
+                              handleMove(column);
+                            }}
                           >
                             Move to {column.name}
                           </DropdownMenuItem>

@@ -1,3 +1,3 @@
-export default async function CreateBoard() {
-  return <h1>CreateBoard</h1>;
+export default async function CreateColumn() {
+  return <h1>CreateColumn</h1>;
 }

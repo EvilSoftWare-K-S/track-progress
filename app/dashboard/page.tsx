@@ -59,6 +59,23 @@ async function DashboardPageWrapper() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <Link
+                  key={'create-board'}
+                  href={`/dashboard/create`}
+                  className="group relative rounded-lg border border-border bg-card p-6 transition-all hover:border-primary hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-semibold text-card-foreground group-hover:text-primary">
+                      create-board-test
+                    </h3>
+                    <span className="text-xs text-muted-foreground">
+                      {"+"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Click to create-board-test
+                  </p>
+                </Link>
             {boards.map((board) => {
               return (
                 <Link

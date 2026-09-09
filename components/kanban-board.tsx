@@ -13,7 +13,7 @@ import {
   MoreVertical,
   Trash2,
 } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
   DropdownMenu,
@@ -29,15 +29,16 @@ import {
   IProgressApplicationCardProps,
   ProgressApplicationCard,
 } from "./progress-application-card";
+import { useBoard } from "@/lib/hooks/useBoards";
 
-export type PopulatedColumn = Populated<
+export type TPopulatedColumn = Populated<
   IColumn,
   "progressApplication",
   IProgressApplication[]
 >;
-export type PopulatedBoard = Populated<IBoard, "columns", PopulatedColumn[]>;
+export type TPopulatedBoard = Populated<IBoard, "columns", TPopulatedColumn[]>;
 export interface IKanbanBoardProps {
-  board: PopulatedBoard;
+  board: TPopulatedBoard;
   userId: string;
 }
 
@@ -74,16 +75,16 @@ function DroppableColumn({
   boardId,
   columns,
 }: {
-  column: PopulatedColumn;
+  column: TPopulatedColumn;
   config: IColumnConfig;
   boardId: mongoose.Types.ObjectId;
-  columns: PopulatedColumn[];
+  columns: TPopulatedColumn[];
 }) {
   // переделать на сложность O(n)
   const sortedProgress =
     column.progressApplication?.sort((a, b) => a.order - b.order) || [];
   return (
-    <Card className="min-w-75 shrink-0 shadow-md p-0">
+    <Card className="min-w-75 shrink-0 shadow-md p-0 rounded-t-lg">
       <CardHeader
         className={`${config.color} text-white rounded-t-lg pb-3 pt-3`}
       >
@@ -146,11 +147,17 @@ function SortableProgressCard({
 }
 
 export default function KanbanBoard({ board, userId }: IKanbanBoardProps) {
-  const columns = board.columns;
+  const { columns, moveProgress, updateBoardData } = useBoard(board);
+
+  useEffect(() => {
+    updateBoardData(board);
+  }, [board, updateBoardData]);
+
   return (
     <>
       <div className="space-y-4">
         <div className="flex gap-4 overflow-x-auto pb-4">
+          {/* <div className=" pb-4"> */}
           {columns.map((column, key) => {
             const config = COLUMN_CONFIG[key] || {
               color: "bg-gray-500",
