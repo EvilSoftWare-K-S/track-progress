@@ -149,7 +149,6 @@ export async function updateProgressApplication(
       .sort({ order: 1 })
       .lean();
 
-    
     let newOrderValue: number;
     if (order !== undefined && order !== null) {
       newOrderValue = order * 100;
@@ -233,4 +232,42 @@ export async function updateProgressApplication(
 
   revalidatePath(`/dashboard/${board.slug}`);
   return { data: JSON.parse(JSON.stringify(updated)) };
+}
+
+export async function deleteProgressApplication(
+  id: Pick<IProgressApplication, "_id">,
+) {
+  const session = await getSession();
+  if (!session?.user) {
+    return { error: "Unauthorized" };
+  }
+
+  const progressApplication: IProgressApplication | null =
+    await ProgressApplication.findById(id);
+
+  if (!progressApplication) {
+    return { error: "Progress application not found" };
+  }
+
+  if (progressApplication.userId !== session.user.id) {
+    return { error: "Unauthorized" };
+  }
+
+  const board: IBoard | null = await Board.findOne({
+    _id: progressApplication.boardId,
+    userId: session.user.id,
+  });
+
+  if (!board) {
+    return { error: "Board not found" };
+  }
+
+  await Column.findByIdAndUpdate(progressApplication.columnId, {
+    $pull: { progressApplication: id },
+  });
+
+  await ProgressApplication.deleteOne({ _id: id });
+
+  revalidatePath(`/dashboard/${board.slug}`);
+  return { success: true };
 }
