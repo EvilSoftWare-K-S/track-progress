@@ -30,6 +30,7 @@ export default function CreateProgressDialog({
     tags: "",
     description: "",
     notes: "",
+    order: 0,
   };
   const [open, setOpen] = useState<boolean>(false);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
@@ -46,6 +47,7 @@ export default function CreateProgressDialog({
           .map((tag) => tag.trim())
           .filter((tag) => tag.length > 0),
       });
+
       if (!result.error) {
         setFormData(INITIAL_FORM_DATA);
         setOpen(false);

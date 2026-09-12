@@ -1,4 +1,4 @@
-import KanbanBoard, { PopulatedBoard } from "@/components/kanban-board";
+import KanbanBoard, { TPopulatedBoard } from "@/components/kanban-board";
 import { getSession } from "@/lib/auth/auth";
 import ConnectDB from "@/lib/db";
 import { Board } from "@/lib/models";
@@ -10,7 +10,7 @@ import { Suspense } from "react";
 async function getBoard(
   userId: string,
   boardsName: string,
-): Promise<PopulatedBoard> {
+): Promise<TPopulatedBoard> {
   "use cache";
   await ConnectDB();
 
@@ -36,17 +36,6 @@ async function BoardContent({ boardsName }: { boardsName: string }) {
     redirect("/sign-in");
   }
   const board = await getBoard(session.user.id, boardsName);
-  // await ConnectDB();
-
-  // const board = await Board.findOne({
-  //   userId: session.user.id,
-  //   slug: boardsName,
-  // }).populate({
-  //   path: "columns",
-  //   populate: {
-  //     path: "progressApplication",
-  //   },
-  // });
 
   if (!board) {
     redirect("/dashboard");

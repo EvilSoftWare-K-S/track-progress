@@ -2,7 +2,12 @@ import ConnectDB from "./db";
 import { Board, Column } from "./models";
 import { generateSlug } from "./utils";
 
-const DEFAULT_COLUMNS = [
+type TColumn = {
+  name: string;
+  order: number;
+};
+
+const DEFAULT_COLUMNS: TColumn[] = [
   {
     name: "Skill wish list",
     order: 0,
@@ -21,7 +26,11 @@ const DEFAULT_COLUMNS = [
   },
 ];
 
-export async function initializeUserBoard(userId: string, boardName: string) {
+export async function initializeUserBoard(
+  userId: string,
+  boardName: string,
+  propColumns?: TColumn[],
+) {
   try {
     await ConnectDB();
 
@@ -38,8 +47,13 @@ export async function initializeUserBoard(userId: string, boardName: string) {
       columns: [],
     });
 
+    if (!propColumns) {
+      await board.save();
+      return board;
+    }
+
     const columns = await Promise.all(
-      DEFAULT_COLUMNS.map((col) =>
+      propColumns.map((col) =>
         Column.create({
           name: col.name,
           order: col.order,
@@ -54,4 +68,11 @@ export async function initializeUserBoard(userId: string, boardName: string) {
   } catch (err) {
     throw err;
   }
+}
+
+export async function defaultInitializeUserBoard(
+  userId: string,
+  boardName: string,
+) {
+  initializeUserBoard(userId, boardName, DEFAULT_COLUMNS);
 }

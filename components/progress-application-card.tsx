@@ -1,3 +1,5 @@
+"use client";
+
 import { IProgressApplication } from "@/lib/models/models.types";
 import { Card, CardContent } from "./ui/card";
 import { Edit2, ExternalLink, MoreVertical, Trash2 } from "lucide-react";
@@ -8,17 +10,92 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { PopulatedColumn } from "./kanban-board";
+import { TPopulatedColumn } from "./kanban-board";
+import {
+  deleteProgressApplication,
+  updateProgressApplication,
+} from "@/lib/actions/progress-applications";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { useState } from "react";
 
 export interface IProgressApplicationCardProps {
   progress: IProgressApplication;
-  columns: PopulatedColumn[];
+  columns: TPopulatedColumn[];
 }
 
 export function ProgressApplicationCard({
   progress,
   columns,
 }: IProgressApplicationCardProps) {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    title: progress.title || "",
+    target: progress.target || "",
+    location: progress.location || "",
+    status: progress.status || "",
+    columnId: progress.columnId || "",
+    boardId: progress.boardId || "",
+    userId: progress.userId || "",
+    order: progress.order || 0,
+    notes: progress.notes || "",
+    rate: progress.rate || "",
+    url: progress.url || "",
+    tags: progress.tags?.join(", ") || "",
+    description: progress.description || "",
+  });
+
+  async function handleUpdate(e: React.SubmitEvent) {
+    e.preventDefault();
+    try {
+      const result = await updateProgressApplication(progress._id, {
+        ...formData,
+        tags: formData.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0),
+      });
+      if (!result.error) {
+        setIsEditing(false);
+      }
+    } catch (err) {
+      console.error("Failed to move progress application: ", err);
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      const result = await deleteProgressApplication(progress._id);
+      if (result.error) {
+        console.error("Failed to delete progress application ", result.error);
+      }
+    } catch (err) {
+      console.error("Failed to delete progress application ", err);
+    }
+  }
+
+  async function handleMove(column: TPopulatedColumn) {
+    try {
+      const result = await updateProgressApplication(progress._id, {
+        boardId: column.boardId,
+        columnId: column._id,
+      });
+      if (result.error) {
+        console.error("Failed to move progress application: ", result.error);
+      }
+    } catch (err) {
+      console.error("Failed to move progress application: ", err);
+    }
+  }
 
   return (
     <>
@@ -75,7 +152,11 @@ export function ProgressApplicationCard({
                   )}
                 />
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setIsEditing(true);
+                    }}
+                  >
                     <Edit2 className="mr-2 h-4 w-4" />
                     Edit
                   </DropdownMenuItem>
@@ -86,6 +167,9 @@ export function ProgressApplicationCard({
                           <DropdownMenuItem
                             key={`${column._id}`}
                             className={"focus:bg-gray-200 "}
+                            onClick={() => {
+                              handleMove(column);
+                            }}
                           >
                             Move to {column.name}
                           </DropdownMenuItem>
@@ -93,7 +177,12 @@ export function ProgressApplicationCard({
                       })}
                     </>
                   )}
-                  <DropdownMenuItem className="text-destructive">
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => {
+                      handleDelete();
+                    }}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Trash
                   </DropdownMenuItem>
@@ -103,6 +192,122 @@ export function ProgressApplicationCard({
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Goal</DialogTitle>
+            <DialogDescription>Track a new goal</DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleUpdate}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    required
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="target">Target</Label>
+                  <Input
+                    id="target"
+                    value={formData.target}
+                    onChange={(e) =>
+                      setFormData({ ...formData, target: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location </Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Rate</Label>
+                  <Input
+                    id="rate"
+                    placeholder="e.g., $100k - $150k or 5 / 10"
+                    value={formData.rate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, rate: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="url">Url</Label>
+                <Input
+                  id="url"
+                  placeholder="https://..."
+                  value={formData.url}
+                  onChange={(e) =>
+                    setFormData({ ...formData, url: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="tags">Tags (comma-separated)</Label>
+                <Input
+                  id="tags"
+                  placeholder="Travelling, Skills, Dream..."
+                  value={formData.tags}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tags: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  rows={3}
+                  placeholder="Brief description of the goal..."
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes </Label>
+                <Textarea
+                  id="notes"
+                  rows={4}
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setIsEditing(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
