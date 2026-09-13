@@ -1,5 +1,3 @@
-import mongoose, { Document } from "mongoose";
-
 import { Types } from "mongoose";
 
 export interface IBoard {
@@ -12,31 +10,24 @@ export interface IBoard {
   updatedAt: Date;
 }
 
-// export interface IBoard extends Document {
-//   name: string;
-//   slug: string;
-//   userId: string;
-//   columns: mongoose.Types.ObjectId[];
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
-
-export interface IColumn extends Document {
+export interface IColumn {
+  _id: Types.ObjectId;
   name: string;
-  boardId: mongoose.Types.ObjectId;
+  boardId: Types.ObjectId;
   order: number;
-  progressApplication: mongoose.Types.ObjectId[];
+  progressApplication: IProgressApplication[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface IProgressApplication extends Document {
+export interface IProgressApplication {
+  _id: Types.ObjectId;
   title: string;
   target?: string;
   location?: string;
   status: string;
-  columnId: mongoose.Types.ObjectId;
-  boardId: mongoose.Types.ObjectId;
+  columnId: Types.ObjectId;
+  boardId: Types.ObjectId;
   userId: string;
   order: number;
   notes?: string;
@@ -50,6 +41,6 @@ export interface IProgressApplication extends Document {
 }
 
 export interface ICreateProgressDialog {
-  columnId: mongoose.Types.ObjectId;
-  boardId: mongoose.Types.ObjectId;
+  columnId: Types.ObjectId;
+  boardId: Types.ObjectId;
 }

@@ -98,7 +98,7 @@ export async function createProgressApplication(
 
 // хрень какая то - переделать
 export async function updateProgressApplication(
-  id: Pick<IProgressApplication, "_id">,
+  id: IProgressApplication["_id"],
   updates: Partial<IProgressApplicationData>,
 ) {
   const session = await getSession();

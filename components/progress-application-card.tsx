@@ -31,11 +31,13 @@ import { useState } from "react";
 export interface IProgressApplicationCardProps {
   progress: IProgressApplication;
   columns: TPopulatedColumn[];
+  dragHandleProps?: React.HTMLAttributes<HTMLElement>;
 }
 
 export function ProgressApplicationCard({
   progress,
   columns,
+  dragHandleProps,
 }: IProgressApplicationCardProps) {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [formData, setFormData] = useState({
@@ -99,7 +101,7 @@ export function ProgressApplicationCard({
 
   return (
     <>
-      <Card className=" cursor-pointer transition-shadow hover:shadow-lg bg-white group shadow-sm">
+      <Card className=" cursor-pointer transition-shadow hover:shadow-lg bg-white group shadow-sm" {...dragHandleProps}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">

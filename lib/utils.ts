@@ -15,4 +15,6 @@ export function generateSlug(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export type Populated<T, K extends keyof T, PopulatedType> = Omit<T, K> & { [P in K]: PopulatedType };
+export type Populated<T, K extends keyof T, PopulatedType> = Omit<T, K> & {
+  [P in K]: PopulatedType;
+};
