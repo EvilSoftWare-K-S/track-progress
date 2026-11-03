@@ -22,9 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { Populated } from "@/lib/utils";
+import { Populated, sameId } from "@/lib/utils";
 import CreateProgressDialog from "./create-progress-dialog";
-import mongoose from "mongoose";
 import {
   IProgressApplicationCardProps,
   ProgressApplicationCard,
@@ -32,10 +31,12 @@ import {
 import { useBoard } from "@/lib/hooks/useBoards";
 import {
   closestCorners,
+  CollisionDetection,
   DndContext,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  pointerWithin,
   PointerSensor,
   useDroppable,
   useSensor,
@@ -68,6 +69,25 @@ export interface IProgressCardProps {
   progress: Populated<IColumn, "progressApplication", IProgressApplication>;
 }
 
+const collisionDetection: CollisionDetection = (args) => {
+  const pointerHits = pointerWithin(args);
+  const collisions =
+    pointerHits.length > 0 ? pointerHits : closestCorners(args);
+
+  const cardCollision = collisions.find((collision) => {
+    const container = args.droppableContainers.find(
+      (droppable) => droppable.id === collision.id,
+    );
+    return container?.data.current?.type === "progress";
+  });
+
+  if (cardCollision) {
+    return [cardCollision];
+  }
+
+  return collisions;
+};
+
 const COLUMN_CONFIG: Array<IColumnConfig> = [
   {
     color: "bg-cyan-500",
@@ -94,7 +114,7 @@ function DroppableColumn({
 }: {
   column: TPopulatedColumn;
   config: IColumnConfig;
-  boardId: mongoose.Types.ObjectId;
+  boardId: IBoard["_id"];
   columns: TPopulatedColumn[];
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -104,9 +124,6 @@ function DroppableColumn({
       columnId: column._id,
     },
   });
-  // // переделать на сложность O(n)
-  // const sortedProgress =
-  //   column.progressApplication?.sort((a, b) => a.order - b.order) || [];
   return (
     <Card className="min-w-75 shrink-0 shadow-md p-0 rounded-t-lg">
       <CardHeader
@@ -141,11 +158,12 @@ function DroppableColumn({
         </div>
       </CardHeader>
       <CardContent
-        ref={setNodeRef}
-        className={`space-y-2 pt-4 bg-gray-50/50 min-h-100 rounded-b-lg ${isOver ? "ring-2 ring-blue-500" : ""}`}
+        className={`flex min-h-100 flex-col space-y-2 rounded-b-lg bg-gray-50/50 pt-4 ${isOver ? "ring-2 ring-blue-500" : ""}`}
       >
         <SortableContext
-          items={column.progressApplication.map((progress) => String(progress._id))}
+          items={column.progressApplication.map((progress) =>
+            String(progress._id),
+          )}
           strategy={verticalListSortingStrategy}
         >
           {column.progressApplication.map((progress) => {
@@ -159,10 +177,12 @@ function DroppableColumn({
           })}
         </SortableContext>
 
-        <CreateProgressDialog
-          columnId={column._id}
-          boardId={boardId}
-        ></CreateProgressDialog>
+        <div ref={setNodeRef} className="flex min-h-12 flex-1 flex-col justify-end">
+          <CreateProgressDialog
+            columnId={column._id}
+            boardId={boardId}
+          ></CreateProgressDialog>
+        </div>
       </CardContent>
     </Card>
   );
@@ -231,110 +251,53 @@ export default function KanbanBoard({ board, userId }: IKanbanBoardProps) {
 
     if (!over || !board._id) return;
 
-    const activeId = String(active.id);
+    const draggedId = String(active.id);
     const overId = String(over.id);
 
-    let draggedProgress: IProgressApplication | null = null;
-    let sourceColumn: string | null = null;
-    let sourceIndex: number = -1;
-
-    for (const column of sortedProgress) {
-      const progress = [...(column.progressApplication || [])].sort(
-        (a, b) => a.order - b.order,
-      );
-
-      const progressIndex = progress.findIndex(
-        (p) => String(p._id) === activeId,
-      );
-
-      if (progressIndex !== -1) {
-        draggedProgress = progress[progressIndex];
-        sourceColumn = String(column._id);
-        sourceIndex = progressIndex;
-        break;
-      }
-    }
-    if (!draggedProgress || !sourceColumn) return;
-
-    // Check if dropped in a column or another progress
-    const targetColumn = sortedProgress.find(
-      (col) => String(col._id) === overId,
+    const sourceColumn = sortedProgress.find((column) =>
+      column.progressApplication.some((progress) =>
+        sameId(progress._id, draggedId),
+      ),
     );
-    const targetProgress = sortedProgress
-      .flatMap((col) => col.progressApplication || [])
-      .find((progress) => String(progress._id) === overId);
+    if (!sourceColumn) return;
 
+    const sourceIndex = sourceColumn.progressApplication.findIndex((progress) =>
+      sameId(progress._id, draggedId),
+    );
+
+    const overType = over.data.current?.type;
     let targetColumnId: string;
     let newOrder: number;
 
-    if (targetColumn) {
-      targetColumnId = String(targetColumn._id);
-      const progressInTarget =
-        targetColumn.progressApplication
-          .filter((p) => String(p._id) !== activeId)
-          .sort((a, b) => a.order - b.order) || [];
-
-      newOrder = progressInTarget.length;
-    } else if (targetProgress) {
-      const targetProgressColumn = sortedProgress.find((col) =>
-        col.progressApplication.some((p) => p._id === targetProgress._id),
+    if (overType === "column" || sameId(overId, over.data.current?.columnId)) {
+      targetColumnId = String(over.data.current?.columnId ?? overId);
+      const targetColumn = sortedProgress.find((column) =>
+        sameId(column._id, targetColumnId),
       );
-      targetColumnId =
-        targetProgress.columnId != null
-          ? String(targetProgress.columnId)
-          : String(targetProgressColumn?._id ?? "");
-      if (!targetColumnId) return;
-
-      const targetColumnObj = sortedProgress.find(
-        (col) => String(col._id) === targetColumnId,
-      );
-
-      if (!targetColumnObj) return;
-
-      const allProgressInTargetOriginal = [
-        ...(targetColumnObj.progressApplication || []),
-      ].sort((a, b) => a.order - b.order);
-
-      const allProgressInTargetFiltered =
-        allProgressInTargetOriginal.filter((p) => String(p._id) !== activeId) ||
-        [];
-
-      const targetIndexInOriginal = allProgressInTargetOriginal.findIndex(
-        (p) => String(p._id) === overId,
-      );
-
-      const targetIndexInFiltered = allProgressInTargetFiltered.findIndex(
-        (p) => String(p._id) === overId,
-      );
-
-      if (targetIndexInFiltered !== -1) {
-        if (sourceColumn === targetColumnId) {
-          if (sourceIndex < targetIndexInOriginal) {
-            newOrder = targetIndexInFiltered + 1;
-          } else {
-            newOrder = targetIndexInFiltered;
-          }
-        } else {
-          newOrder = targetIndexInFiltered;
-        }
-      } else {
-        newOrder = allProgressInTargetFiltered.length;
-      }
+      newOrder = (targetColumn?.progressApplication || []).filter(
+        (progress) => !sameId(progress._id, draggedId),
+      ).length;
     } else {
+      const targetColumn = sortedProgress.find((column) =>
+        column.progressApplication.some((progress) =>
+          sameId(progress._id, overId),
+        ),
+      );
+      if (!targetColumn) return;
+
+      targetColumnId = String(targetColumn._id);
+      const overIndex = targetColumn.progressApplication.findIndex((progress) =>
+        sameId(progress._id, overId),
+      );
+      if (overIndex === -1) return;
+      newOrder = overIndex;
+    }
+
+    if (sameId(sourceColumn._id, targetColumnId) && sourceIndex === newOrder) {
       return;
     }
 
-    if (!targetColumnId) {
-      return;
-    }
-    const activeObjectId = String(activeId);
-    const targetColumnObjectId = String(targetColumnId);
-
-    if (!activeObjectId || !targetColumnObjectId) {
-      return;
-    }
-
-    await moveProgress(activeObjectId, targetColumnObjectId, newOrder);
+    await moveProgress(draggedId, targetColumnId, newOrder);
   }
 
   const activeProgress = sortedProgress
@@ -345,12 +308,12 @@ export default function KanbanBoard({ board, userId }: IKanbanBoardProps) {
     <DndContext
       id={dndContextId}
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 pl-1 pr-1">
           {/* <div className=" pb-4"> */}
           {sortedProgress.map((column, key) => {
             const config = COLUMN_CONFIG[key] || {

@@ -5,6 +5,7 @@ import { getSession } from "../auth/auth";
 import ConnectDB from "../db";
 import { Board, Column, ProgressApplication } from "../models";
 import { IBoard, IColumn, IProgressApplication } from "../models/models.types";
+import { sameId } from "../utils";
 
 export type IProgressApplicationData = Pick<
   IProgressApplication,
@@ -106,6 +107,8 @@ export async function updateProgressApplication(
     return { error: "Unauthorized" };
   }
 
+  await ConnectDB();
+
   const progressApplication: IProgressApplication | null =
     await ProgressApplication.findById(id);
 
@@ -120,7 +123,7 @@ export async function updateProgressApplication(
   const { columnId, order, ...otherUpdates } = updates;
 
   const board: IBoard | null = await Board.findOne({
-    _id: otherUpdates.boardId,
+    _id: otherUpdates.boardId ?? progressApplication.boardId,
     userId: session.user.id,
   });
 
@@ -128,102 +131,51 @@ export async function updateProgressApplication(
     return { error: "Board not found" };
   }
 
-  // сузить тип до примитивов
   const updatesToApply: Partial<IProgressApplication> = otherUpdates;
 
   const currentColumnId = progressApplication.columnId;
-  const newColumnId = columnId;
-
+  const nextColumnId = columnId ?? currentColumnId;
   const isMovingToDifferentColumn =
-    newColumnId && newColumnId !== currentColumnId;
+    columnId !== undefined && !sameId(columnId, currentColumnId);
+  const shouldReindex =
+    !("title" in updates) &&
+    (isMovingToDifferentColumn || order !== undefined);
 
   if (isMovingToDifferentColumn) {
     await Column.findByIdAndUpdate(currentColumnId, {
       $pull: { progressApplication: id },
     });
-
-    const progressInTargetColumn = await ProgressApplication.find({
-      columnId: newColumnId,
-      _id: { $ne: id },
-    })
-      .sort({ order: 1 })
-      .lean();
-
-    let newOrderValue: number;
-    if (order !== undefined && order !== null) {
-      newOrderValue = order * 100;
-
-      const progressThatNeedToShift = progressInTargetColumn.slice(order);
-
-      for (const progress of progressThatNeedToShift) {
-        await ProgressApplication.findByIdAndUpdate(progress._id, {
-          $set: { order: progress.order + 100 },
-        });
-      }
-    } else {
-      if (progressInTargetColumn.length > 0) {
-        const lastProgressOrder =
-          progressInTargetColumn[progressInTargetColumn.length - 1].order || 0;
-        newOrderValue = lastProgressOrder + 100;
-      } else {
-        newOrderValue = 0;
-      }
-    }
-
-    updatesToApply.columnId = newColumnId;
-    updatesToApply.order = newOrderValue;
-
-    await Column.findByIdAndUpdate(newColumnId, {
+    await Column.findByIdAndUpdate(nextColumnId, {
       $push: { progressApplication: id },
     });
-  } else if (order !== undefined && order !== null) {
-    const otherProgressInColumn = await ProgressApplication.find({
-      columnId: currentColumnId,
+    updatesToApply.columnId = nextColumnId;
+  }
+
+  if (shouldReindex) {
+    const siblings = await ProgressApplication.find({
+      columnId: nextColumnId,
       _id: { $ne: id },
     })
       .sort({ order: 1 })
       .lean();
 
-    const currentProgressOrder = progressApplication.order || 0;
+    const insertAt =
+      order === undefined || order === null
+        ? siblings.length
+        : Math.max(0, Math.min(order, siblings.length));
 
-    const currentPositionIndex = otherProgressInColumn.findIndex(
-      (progress) => progress.order > currentProgressOrder,
+    updatesToApply.order = insertAt * 100;
+
+    await Promise.all(
+      siblings.map((progress, idx) => {
+        const newIndex = idx >= insertAt ? idx + 1 : idx;
+        return ProgressApplication.findByIdAndUpdate(progress._id, {
+          $set: { order: newIndex * 100 },
+        });
+      }),
     );
-    const oldPositionIndex =
-      currentPositionIndex === -1
-        ? otherProgressInColumn.length
-        : currentPositionIndex;
-
-    const newOrderValue = order * 100;
-
-    if (order < oldPositionIndex) {
-      const progressToShiftDown = otherProgressInColumn.slice(
-        order,
-        oldPositionIndex,
-      );
-      for (const progress of progressToShiftDown) {
-        await ProgressApplication.findByIdAndUpdate(progress._id, {
-          $set: {
-            order: progress.order + 100,
-          },
-        });
-      }
-    } else if (order > oldPositionIndex) {
-      const progressToShiftUp = otherProgressInColumn.slice(
-        oldPositionIndex,
-        order,
-      );
-      for (const progress of progressToShiftUp) {
-        const newOrder = Math.max(0, progress.order - 100);
-        await ProgressApplication.findByIdAndUpdate(progress._id, {
-          $set: {
-            order: newOrder,
-          },
-        });
-      }
-    }
-    updatesToApply.order = newOrderValue;
   }
+
   const updated = await ProgressApplication.findByIdAndUpdate(
     id,
     updatesToApply,
@@ -235,7 +187,7 @@ export async function updateProgressApplication(
 }
 
 export async function deleteProgressApplication(
-  id: Pick<IProgressApplication, "_id">,
+  id: IProgressApplication["_id"],
 ) {
   const session = await getSession();
   if (!session?.user) {

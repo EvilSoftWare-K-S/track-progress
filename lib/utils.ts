@@ -18,3 +18,7 @@ export function generateSlug(name: string): string {
 export type Populated<T, K extends keyof T, PopulatedType> = Omit<T, K> & {
   [P in K]: PopulatedType;
 };
+
+export function sameId(a: unknown, b: unknown): boolean {
+  return String(a) === String(b);
+}

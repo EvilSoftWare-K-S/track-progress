@@ -1,19 +1,20 @@
 import { Types } from "mongoose";
+export type MongoId = Types.ObjectId | string;
 
 export interface IBoard {
-  _id: Types.ObjectId;
+  _id: MongoId;
   name: string;
   slug: string;
   userId: string;
-  columns: Types.ObjectId[];
+  columns: MongoId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface IColumn {
-  _id: Types.ObjectId;
+  _id: MongoId;
   name: string;
-  boardId: Types.ObjectId;
+  boardId: MongoId;
   order: number;
   progressApplication: IProgressApplication[];
   createdAt: Date;
@@ -21,13 +22,13 @@ export interface IColumn {
 }
 
 export interface IProgressApplication {
-  _id: Types.ObjectId;
+  _id: MongoId;
   title: string;
   target?: string;
   location?: string;
   status: string;
-  columnId: Types.ObjectId;
-  boardId: Types.ObjectId;
+  columnId: MongoId;
+  boardId: MongoId;
   userId: string;
   order: number;
   notes?: string;
@@ -41,6 +42,6 @@ export interface IProgressApplication {
 }
 
 export interface ICreateProgressDialog {
-  columnId: Types.ObjectId;
-  boardId: Types.ObjectId;
+  columnId: MongoId;
+  boardId: MongoId;
 }
